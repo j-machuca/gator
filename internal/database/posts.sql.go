@@ -12,6 +12,45 @@ import (
 	"github.com/google/uuid"
 )
 
+const getPosts = `-- name: GetPosts :many
+select title,description,published_at,url from posts limit $1
+`
+
+type GetPostsRow struct {
+	Title       string
+	Description string
+	PublishedAt string
+	Url         string
+}
+
+func (q *Queries) GetPosts(ctx context.Context, limit int32) ([]GetPostsRow, error) {
+	rows, err := q.db.QueryContext(ctx, getPosts, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetPostsRow
+	for rows.Next() {
+		var i GetPostsRow
+		if err := rows.Scan(
+			&i.Title,
+			&i.Description,
+			&i.PublishedAt,
+			&i.Url,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const insertPost = `-- name: InsertPost :one
 insert into posts(
     id,
