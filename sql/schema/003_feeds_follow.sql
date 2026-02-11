@@ -12,4 +12,4 @@ create table feed_follows(
 );
 
 -- +goose Down
-drop table feeds_follow;
+drop table feed_follows;

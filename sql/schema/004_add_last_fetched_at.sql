@@ -4,4 +4,4 @@ add column if not exists last_fetched_at timestamp;
 
 -- +goose Down
 alter table feeds
-drop column last_fecthed_at;
+drop column last_fetched_at;

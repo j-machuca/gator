@@ -1,9 +1,11 @@
 -- name: CreateFeed :one
-INSERT INTO FEEDS(id,name,url,user_id) values(
+INSERT INTO FEEDS(id,name,url,user_id,created_at,updated_at) values(
     $1,
     $2,
     $3,
-    $4
+    $4,
+    $5,
+    $6
 )
 returning *;
 
@@ -33,6 +35,6 @@ where feeds.id = $1;
 
 -- name: GetNextFeedToFetch :one
 
-select id,url,min(last_fecthed_at) as last_fecthed_at from feeds
+select id,url,min(last_fetched_at) as last_fetched_at from feeds
 group by id
-order by last_fecthed_at asc nulls first;
+order by last_fetched_at asc nulls first;

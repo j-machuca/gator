@@ -8,25 +8,30 @@ package database
 import (
 	"context"
 	"database/sql"
+	"time"
 
 	"github.com/google/uuid"
 )
 
 const createFeed = `-- name: CreateFeed :one
-INSERT INTO FEEDS(id,name,url,user_id) values(
+INSERT INTO FEEDS(id,name,url,user_id,created_at,updated_at) values(
     $1,
     $2,
     $3,
-    $4
+    $4,
+    $5,
+    $6
 )
-returning id, name, url, user_id, last_fetched_at
+returning id, name, url, user_id, created_at, updated_at, last_fetched_at
 `
 
 type CreateFeedParams struct {
-	ID     uuid.UUID
-	Name   string
-	Url    string
-	UserID uuid.UUID
+	ID        uuid.UUID
+	Name      string
+	Url       string
+	UserID    uuid.UUID
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
 func (q *Queries) CreateFeed(ctx context.Context, arg CreateFeedParams) (Feed, error) {
@@ -35,6 +40,8 @@ func (q *Queries) CreateFeed(ctx context.Context, arg CreateFeedParams) (Feed, e
 		arg.Name,
 		arg.Url,
 		arg.UserID,
+		arg.CreatedAt,
+		arg.UpdatedAt,
 	)
 	var i Feed
 	err := row.Scan(
@@ -42,6 +49,8 @@ func (q *Queries) CreateFeed(ctx context.Context, arg CreateFeedParams) (Feed, e
 		&i.Name,
 		&i.Url,
 		&i.UserID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
 		&i.LastFetchedAt,
 	)
 	return i, err
@@ -49,7 +58,7 @@ func (q *Queries) CreateFeed(ctx context.Context, arg CreateFeedParams) (Feed, e
 
 const getFeedByUrl = `-- name: GetFeedByUrl :one
 
-select id, name, url, user_id, last_fetched_at from feeds where url=$1
+select id, name, url, user_id, created_at, updated_at, last_fetched_at from feeds where url=$1
 `
 
 func (q *Queries) GetFeedByUrl(ctx context.Context, url string) (Feed, error) {
@@ -60,6 +69,8 @@ func (q *Queries) GetFeedByUrl(ctx context.Context, url string) (Feed, error) {
 		&i.Name,
 		&i.Url,
 		&i.UserID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
 		&i.LastFetchedAt,
 	)
 	return i, err
@@ -104,21 +115,21 @@ func (q *Queries) GetFeeds(ctx context.Context) ([]GetFeedsRow, error) {
 
 const getNextFeedToFetch = `-- name: GetNextFeedToFetch :one
 
-select id,url,min(last_fecthed_at) as last_fecthed_at from feeds
+select id,url,min(last_fetched_at) as last_fetched_at from feeds
 group by id
-order by last_fecthed_at asc nulls first
+order by last_fetched_at asc nulls first
 `
 
 type GetNextFeedToFetchRow struct {
 	ID            uuid.UUID
 	Url           string
-	LastFecthedAt interface{}
+	LastFetchedAt interface{}
 }
 
 func (q *Queries) GetNextFeedToFetch(ctx context.Context) (GetNextFeedToFetchRow, error) {
 	row := q.db.QueryRowContext(ctx, getNextFeedToFetch)
 	var i GetNextFeedToFetchRow
-	err := row.Scan(&i.ID, &i.Url, &i.LastFecthedAt)
+	err := row.Scan(&i.ID, &i.Url, &i.LastFetchedAt)
 	return i, err
 }
 

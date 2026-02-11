@@ -16,10 +16,12 @@ func handleAddFeed(s *state, cmd command, user database.User) error {
 	}
 
 	feed, err := s.db.CreateFeed(ctx, database.CreateFeedParams{
-		ID:     uuid.New(),
-		Name:   cmd.Args[0],
-		Url:    cmd.Args[1],
-		UserID: user.ID,
+		ID:        uuid.New(),
+		Name:      cmd.Args[0],
+		Url:       cmd.Args[1],
+		UserID:    user.ID,
+		CreatedAt: time.Now().UTC(),
+		UpdatedAt: time.Now().UTC(),
 	})
 	if err != nil {
 		return fmt.Errorf("Failed to follow feed after creating %w", err)
