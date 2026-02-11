@@ -7,6 +7,7 @@ import (
 	"html"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/j-machuca/gator/internal/database"
 	"github.com/j-machuca/gator/internal/rss"
 )
@@ -54,8 +55,29 @@ func scrapeFeeds(s *state) error {
 
 	fmt.Print("iterating over items in feed\n")
 	for _, item := range feed.Channel.Item {
-		fmt.Println(html.UnescapeString(item.Title))
+		insertPost(s, item, feedToFetch.ID)
 	}
 
 	return nil
+}
+
+func insertPost(s *state, item rss.RSSItem, feed_id uuid.UUID) (database.Post, error) {
+	p, err := s.db.InsertPost(context.Background(), database.InsertPostParams{
+		ID:          uuid.New(),
+		CreatedAt:   time.Now().UTC(),
+		UpdatedAt:   time.Now().UTC(),
+		Title:       html.UnescapeString(item.Title),
+		Description: html.UnescapeString(item.Description),
+		Url:         item.Link,
+		PublishedAt: item.PubDate,
+		FeedID:      feed_id,
+	})
+	if err != nil {
+		return database.Post{}, fmt.Errorf("Failed to save post to Database Error: \n %w", err)
+	}
+	fmt.Println("Inserted Post:")
+	fmt.Printf("Title: %s\n", p.Title)
+	fmt.Printf("Description: %s\n", p.Description)
+	fmt.Printf("URL: %s\n", p.Url)
+	return p, nil
 }
